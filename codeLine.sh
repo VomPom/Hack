@@ -34,10 +34,13 @@ function is_fileter_dir() {
 function get_add_remove_count() {
 	string=$1
 	array=(${string//,/ })
-	for var in ${array[@]}; do
-		echo $var
-	done
-
+    var=$[ add_code[0]+array[0] ]
+   
+    # ${add_code[0]}=${add_code[0]}+${array[0]}
+    echo ${add_code[0]}
+    #  = ${add_code[index]}+${array[0]
+    # add_code=$[${add_code[index]}+${array[0]}]
+    # remove_code=$[${remove_code[index]}+${array[1]}]
 }
 #获取该用户在该文件夹下的提交代码数
 function get_user_line() {
@@ -51,6 +54,7 @@ function trans_every_user() {
 	for i in "${!users_name[@]}"; do
 		get_user_line "${users_name[$i]}"
 	done
+    index=$[$index+1]
 	cd ..
 }
 
@@ -66,7 +70,6 @@ do
             else
             echo "<=========获取【"$path"】的Git代码提交数据======>"
             array_git_repositories=(${array_git_repositories[@]} $path)
-
             cd $path
             trans_every_user
         fi
@@ -82,3 +85,4 @@ do
 done
 #echo $add_line_count
 echo '================================================================================='
+echo add_code
