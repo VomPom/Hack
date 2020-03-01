@@ -1,6 +1,6 @@
 ########################################################
 #
-# Created by julis.wang on 2020/02/28
+# Created by https://julis.wang on 2020/02/28
 #
 # Description : 统计本地代码提交行数
 #
@@ -8,14 +8,22 @@
 
 #!/bin/bash
 
-users_name=("julis" "julis.wang" "julis.wang.hp")                   #考虑到每个人的账号可能有很多个，所以定义成数组
+#这里添加你的git常用用户名。考虑到每个人的账号可能有很多个，所以定义成数组
+users_name=("julis" "julis.wang" "julis.wang.hp")      
 
-filter_path=("Backend" "test" "sdk" "fork" "BeiBeiProject"
-	"JW" "beibei_identify" "beidai_component" "beidian-module")     #过滤一些不需要去遍历的文件夹
+#过滤一些不需要去遍历的文件夹
+filter_path=("Backend" "test" "sdk" "fork" "BeiBeiProject")     
 
-export index=0             
-export add_line_count=0                                             #添加的line总行数
-export remove_line_count=0                                          #删除的总行数
+
+
+
+########################################################
+# 以下代码不需动                       
+########################################################
+
+export index=0             			#记录当前的位置
+export add_line_count=0             #添加的line总行数
+export remove_line_count=0          #删除的总行数
 
 export array_git_repositories=()    #用于记录仓库名
 export add_code=()                  #记录所有用户对某个库的添加的行数
@@ -34,16 +42,38 @@ function is_fileter_dir() {
 function get_add_remove_count() {
 	string=$1
 	array=(${string//,/ })
-	for var in ${array[@]}; do
-		echo $var
-	done
+	if [ ! ${array[0]} ]; then
+  		add_line=0
+	else
+  		add_line=${array[0]}
+	fi
+	
+	if [ ! ${array[1]} ]; then
+  		remove_line=0
+	else
+  		remove_line=${array[1]}
+	fi
 
+	if [ ! ${add_code[$index]} ]; then
+  		add_code[$index]=0
+	
+	fi
+	if [ ! ${remove_code[$index]} ]; then
+  		remove_code[$index]=0
+	
+	fi
+	remove_code[$index]=`expr ${remove_code[$index]} + $remove_line`
+	add_code[$index]=`expr ${add_code[$index]} + $add_line`
+
+	echo "用户"$2"添加了="$add_line"行 删除了"$add_line"行"
+	
 }
 #获取该用户在该文件夹下的提交代码数
 function get_user_line() {
+	# output分别去接收 该文件夹下的提交以及删除行数
 	output=$(git log --author=${1} --pretty=tformat: --numstat | awk '
     {add += $1; subs += $2; loc += $1 - $2 } END { printf "%s,%s,%s\n", add, subs, loc }' -)
-	get_add_remove_count $output
+	get_add_remove_count $output ${1}
 }
 
 #遍历每个用户名
@@ -65,20 +95,27 @@ do
             echo "<=========过滤了【"$path"】======>"
             else
             echo "<=========获取【"$path"】的Git代码提交数据======>"
+			index=${#array_git_repositories[@]} #用于记录当前在第几个文件夹下处理
             array_git_repositories=(${array_git_repositories[@]} $path)
-
+			
             cd $path
             trans_every_user
         fi
     fi
 done
-
-echo '================================================================================='
-echo "                           本次共遍历【"${#array_git_repositories[@]}"】个仓库                      "
-echo '================================================================================='
+all_add_line=0
+all_remove_line=0
+echo '==============================================================================='
+echo "                  本次共统计了【"${#array_git_repositories[@]}"】个仓库   by julis.wang      "
+echo '==============================================================================='
+printf "%-30s %10s %10s %10s\n" "Folder" "Add" "Remove" "All"
+echo '-------------------------------------------------------------------------------'
 for ((i=0;i<${#array_git_repositories[@]};i++))
 do
-    echo ${array_git_repositories[$i]}
+	all_add_line=`expr $all_add_line + ${add_code[$i]}`
+	all_remove_line=`expr $all_remove_line + ${remove_code[$i]}`
+	printf "%-30s %10s %10s %10s\n" ${array_git_repositories[$i]} ${add_code[$i]} ${remove_code[$i]} `expr ${add_code[$i]} - ${remove_code[$i]}`
 done
-#echo $add_line_count
-echo '================================================================================='
+echo '-------------------------------------------------------------------------------'
+printf "%-30s %10s %10s %10s\n" "Total" $all_add_line $all_remove_line `expr $all_add_line - $all_remove_line`
+echo '==============================================================================='
